@@ -22,10 +22,6 @@ func main() {
 		Email    string `json:"email" form:"email"`
 		Password string `json:"password" form:"password"`
 	}
-	type movie struct {
-		Id   int
-		Name string
-	}
 
 	users := []userStruct{
 		{Id: 1, Email: "sandi@gmail.com", Password: "12345678"},
@@ -86,9 +82,31 @@ func main() {
 	}
 
 	router.GET("/movies", func(ctx *gin.Context) {
+		nameQ := ctx.Query("name")
+		if nameQ == "" {
+			ctx.JSON(http.StatusOK, gin.H{
+				"msg":  "success",
+				"data": movies,
+			})
+		}
+
+		result := []movieStruct{}
+		for _, m := range movies {
+			condition := strings.EqualFold(m.Name, nameQ)
+			if condition {
+				result = append(result, m)
+			}
+
+		}
+		if len(result) == 0 {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"msg": "Movie tidak ditemukan ",
+			})
+			return
+		}
 		ctx.JSON(http.StatusOK, gin.H{
-			"msg":  "get all movie success",
-			"data": movies,
+			"msg":  "get movie success",
+			"data": result,
 		})
 	})
 	router.GET("/movies/:id", func(ctx *gin.Context) {
