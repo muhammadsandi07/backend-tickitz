@@ -1,17 +1,63 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
-	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
+
 	router := gin.Default()
+	dbEnv := []any{}
+	dbEnv = append(dbEnv, os.Getenv("DBUSER"))
+	dbEnv = append(dbEnv, os.Getenv("DBPASS"))
+	dbEnv = append(dbEnv, os.Getenv("DBHOST"))
+	dbEnv = append(dbEnv, os.Getenv("DBPORT"))
+	dbEnv = append(dbEnv, os.Getenv("DBNAME"))
+	// setup database connection
+	for _, v := range dbEnv {
+		log.Println("[debug]", v)
+	}
+	dbString := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbEnv...)
+	dbClient, err := pgxpool.New(context.Background(), dbString)
+	if err != nil {
+		log.Printf("Unable to create connection pool:%v\n", err)
+		os.Exit(1)
+	}
+	defer func() {
+		log.Println("Closing DB...")
+		dbClient.Close()
+	}()
+	// endpoint & resource
+	// /ping => protocol://hostname/ping => http://localhost:port/ping
 	router.GET("/ping", func(ctx *gin.Context) {
+
+		type students struct {
+			Id   int    "json: id"
+			name string "json: id"
+		}
+		// query := "SELECT id, name from students"
+		// rows, err := dbClient.Query(context.Background(), query)
+		// if err != nil{
+		// 	log.Println(err.Error())
+		// 	ctx.JSON(http.StatusInternalServerError, gin.H{
+		// 		"msg": "terjadi kesalahan sistem",
+		// 	})
+		// 	return
+		// }
+
+		// defer rows.Close()
+		// var result
+
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
@@ -49,9 +95,8 @@ func main() {
 		}
 
 		for _, user := range users {
-			accountAlready := strings.EqualFold(user.Email, newUser.Email)
-
-			if accountAlready {
+			isEmailExist := user.Email == newUser.Email
+			if isEmailExist {
 				ctx.JSON(http.StatusBadRequest, gin.H{
 					"msg": "User sudah tersedia",
 				})
@@ -67,53 +112,89 @@ func main() {
 	// movie
 
 	type movieStruct struct {
-		Id       int    `json:"id" from:"id"`
-		Name     string `json:"name" from:"name"`
-		duration int    `json:"duration" from:"duration"`
-		synopsis string `json:"synopsis" from:"synopsis"`
-	}
-
-	movies := []movieStruct{
-		{Id: 1, Name: "spiderman", duration: 200, synopsis: "ini spiderman"},
-		{Id: 2, Name: "suster kagak ngesot", duration: 200, synopsis: "ini mah kayang kayanya"},
-		{Id: 3, Name: "pocong kepeleset", duration: 200, synopsis: "kagak bisa diri lagi"},
-		{Id: 4, Name: "tuyul sedekah", duration: 200, synopsis: "tuyul versi ramadhan"},
-		{Id: 5, Name: "jelangkung minta anter", duration: 200, synopsis: "jelangkung minta anter"},
+		Id           int       `json:"id,omitempty" form:"id" db:"id"`
+		Name         string    `json:"name" form:"name" db:"name"`
+		Duration     int       `json:"duration" form:"duration" db:"duration"`
+		Synopsis     string    `json:"synopsis" form:"synopsis" db:"synopsis"`
+		Img_movie    string    `json:"img_movie" form:img_movie db:"img_movie"`
+		Backdrop     string    `json:"backdrop" form:backdrop db:"backdrop"`
+		Release_Date time.Time `json:"release_date" form:release_date db:"release_date"`
 	}
 
 	router.GET("/movies", func(ctx *gin.Context) {
 		nameQ := ctx.Query("name")
+		// type Movie struct {
+		// 	Id   int    `json:"id" db:"id"`
+		// 	Name string `json:"name" db:"name"`
+		// }
+
 		if nameQ == "" {
+			query := "select id, name, duration, synopsis, img_movie, backdrop, release_date FROM movie"
+			rows, err := dbClient.Query(ctx.Request.Context(), query)
+			if err != nil {
+				log.Println(err.Error())
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"msg": "terjadi kesalahan sistem",
+				})
+				return
+			}
+			defer rows.Close()
+			var result []movieStruct
+			for rows.Next() {
+				var movie movieStruct
+				if err := rows.Scan(&movie.Id, &movie.Name, &movie.Duration, &movie.Synopsis, &movie.Img_movie, &movie.Backdrop, &movie.Release_Date); err != nil {
+					log.Println(err.Error())
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"msg": "terjadi kesalahan sistem",
+					})
+					return
+				}
+				result = append(result, movie)
+			}
 			ctx.JSON(http.StatusOK, gin.H{
 				"msg":  "success",
-				"data": movies,
-			})
-		}
-
-		result := []movieStruct{}
-		for _, m := range movies {
-			condition := strings.EqualFold(m.Name, nameQ)
-			if condition {
-				result = append(result, m)
-			}
-
-		}
-		if len(result) == 0 {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"msg": "Movie tidak ditemukan ",
+				"data": result,
 			})
 			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{
-			"msg":  "get movie success",
-			"data": result,
-		})
+		// query := "SELECT id, name from movie where name like $1"
+		// values := []any{nameQ}
+		// var result Movie
+		// if err := dbClient.QueryRow(context.Background(), query, values...).Scan(&result.Id, &result.Name); err != nil {
+		// 	log.Println(err.Error())
+		// 	ctx.JSON(http.StatusInternalServerError, gin.H{
+		// 		"msg": "Terjadi kesalahan sistem",
+		// 	})
+		// 	return
+		// }
+		// ctx.JSON(http.StatusOK, gin.H{
+		// 	"msg":  "Success",
+		// 	"user": result,
+		// })
+		// for _, m := range movies {
+		// 	condition := strings.EqualFold(m.Name, nameQ)
+		// 	if condition {
+		// 		result = append(result, m)
+		// 	}
+
+		// }
+		// if len(result) == 0 {
+		// 	ctx.JSON(http.StatusNotFound, gin.H{
+		// 		"msg": "Movie tidak ditemukan ",
+		// 	})
+		// 	return
+		// }
+		// ctx.JSON(http.StatusOK, gin.H{
+		// 	"msg":  "get movie success",
+		// 	"data": result,
+		// })
 	})
 	router.GET("/movies/:id", func(ctx *gin.Context) {
+
 		idMovie, ok := ctx.Params.Get("id")
 		if !ok {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"msg": "params is is needed",
+				"msg": "params id is needed",
 			})
 		}
 
@@ -124,26 +205,49 @@ func main() {
 			})
 			return
 		}
-
-		var movie []movieStruct
-		for _, m := range movies {
-			if m.Id == idInt {
-				movie = append(movie, m)
-				break
-			}
-		}
-		if len(movie) == 0 {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"msg": "movie tidak tersedia",
+		query := "select id, name, duration, synopsis, img_movie, backdrop, release_date FROM movie where id =$1"
+		var result movieStruct
+		if err := dbClient.QueryRow(ctx.Request.Context(), query, idInt).Scan(&result.Id, &result.Name, &result.Duration, &result.Synopsis, &result.Img_movie, &result.Backdrop, &result.Release_Date); err != nil {
+			log.Println(err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "terjadi kesalahan server",
 			})
+			return
+		}
+		ctx.JSON(http.StatusOK, gin.H{
+			"msg":  "success get movie by id",
+			"data": result,
+		})
+	})
+
+	router.POST("/movies", func(ctx *gin.Context) {
+		newMovie := &movieStruct{}
+		if err := ctx.ShouldBind(newMovie); err != nil {
+			log.Println(err)
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "terjadi kesalahan sistem",
+			})
+			return
+		}
+
+		query := "INSERT INTO movie (name, duration, synopsis, img_movie, backdrop, release_date) VALUES ($1, $2, $3, $4, $5, $6)"
+		value := []any{newMovie.Name, newMovie.Duration, newMovie.Synopsis, newMovie.Img_movie, newMovie.Backdrop, newMovie.Release_Date}
+
+		cmd, err := dbClient.Exec(ctx.Request.Context(), query, value...)
+		if err != nil {
+			log.Println(err.Error())
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"msg": "terjadi kesalahan server",
+			})
+			return
+		}
+		if cmd.RowsAffected() == 0 {
+			log.Println("query gagal, tidak merubah data di DB")
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
-			"msg":  "success get movie by id",
-			"data": movie,
+			"message": "success",
 		})
-
 	})
-
-	router.Run("127.0.0.1:8080")
+	router.Run("127.0.0.1:8085")
 }
