@@ -6,6 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// PingExample godoc
+// @Summary ping example
+// @Schemes
+// @Description do ping
+// @Tags example
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /example/helloworld [get]
+
 func initPingRouter(router *gin.Engine) {
 	userRouter := router.Group("/ping")
 	userRouter.GET("", func(ctx *gin.Context) {
