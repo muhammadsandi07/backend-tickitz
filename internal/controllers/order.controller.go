@@ -18,6 +18,15 @@ func NewOrderController(orderRepo *repositories.OrderRepository) *OrderControlle
 	return &OrderController{orderRepo: orderRepo}
 }
 
+// Add Order
+// @summary					Add Order
+// @router					/order [POST]
+// @accept					json
+// @param					id path  int true "Query Parameters"
+// @param					request body models.OrderStruct true "Add Order"
+// @produce					json
+// @failure					500 {object} models.ErrorResponse
+// @success					200 {object} models.Response
 func (o *OrderController) AddOrder(ctx *gin.Context) {
 
 	newOrder := &models.OrderStruct{}
@@ -61,6 +70,14 @@ func (o *OrderController) AddOrder(ctx *gin.Context) {
 
 }
 
+// Get Order By User
+// @summary					Get Order By User
+// @router					/order [GET]
+// @accept					json
+// @param					request body int true "id user by token"
+// @produce					json
+// @failure					500 {object} models.ErrorResponse
+// @success					200 {object} models.Response
 func (o *OrderController) GetOrderByUser(ctx *gin.Context) {
 
 	payload, ok := ctx.Get("Payload")

@@ -1,0 +1,9 @@
+basePath: /
+host: localhose:8080
+info:
+  contact: {}
+  description: example of working Backedn crated during class
+  title: TICKITZ API
+  version: "1.0"
+paths: {}
+swagger: "2.0"

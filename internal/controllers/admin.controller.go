@@ -23,6 +23,14 @@ func NewAdminController(movieRepo *repositories.MovieRepository) *AdminControlle
 	return &AdminController{movieRepo: movieRepo}
 }
 
+// Add Movie
+// @summary					Add Movie
+// @router					/movies [POST]
+// @accept					json
+// @param					id path  int true "Query Parameters"
+// @produce					json
+// @failure					500 {object} models.ErrorResponse
+// @success					200 {object} models.Response
 func (a *AdminController) AddMovie(ctx *gin.Context) {
 	// newMovie := &models.MovieStruct{}
 	// file, err1 := ctx.FormFile("img")
@@ -92,6 +100,14 @@ func fileHandling(ctx *gin.Context, file *multipart.FileHeader) (filename, filep
 	return filename, filepath, nil
 }
 
+// Update Movie
+// @summary					Update Movie
+// @router					/movies/:id [PATCH]
+// @accept					json
+// @param					id path  int true "Query Parameters"
+// @produce					json
+// @failure					500 {object} models.ErrorResponse
+// @success					200 {object} models.Response
 func (a *AdminController) UpdateMovie(ctx *gin.Context) {
 	newMovie := &models.MovieStruct{}
 	idMovie, ok := ctx.Params.Get("id")
@@ -123,6 +139,14 @@ func (a *AdminController) UpdateMovie(ctx *gin.Context) {
 	return
 }
 
+// Delete Movie
+// @summary					Delete Movie
+// @router					/movies/:id [DELETE]
+// @accept					json
+// @param					id path  int true "Query Parameters"
+// @produce					json
+// @failure					500 {object} models.ErrorResponse
+// @success					200 {object} models.Response
 func (a *AdminController) DeleteMovieById(ctx *gin.Context) {
 	var movies models.MovieStruct
 	err := ctx.ShouldBind(&movies)
@@ -158,4 +182,37 @@ func (a *AdminController) DeleteMovieById(ctx *gin.Context) {
 		"msg": "deleted movie success",
 	})
 
+}
+
+func (a *AdminController) GetGenre(ctx *gin.Context) {
+	result, err := a.movieRepo.GetGenres(ctx.Request.Context())
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "terjadi kesalahan sistem",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":  "success",
+		"data": result,
+	})
+	return
+}
+func (a *AdminController) GetCinema(ctx *gin.Context) {
+	result, err := a.movieRepo.GetCinema(ctx.Request.Context())
+	if err != nil {
+		log.Println(err.Error())
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "terjadi kesalahan sistem",
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"msg":  "success",
+		"data": result,
+	})
+	return
 }

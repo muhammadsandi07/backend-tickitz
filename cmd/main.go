@@ -18,7 +18,6 @@ import (
 // @description 		example of working Backedn crated during class
 // @host				localhose:8080
 // @BasePath			/
-
 func main() {
 
 	// setup database connection

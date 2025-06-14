@@ -12,11 +12,13 @@ func initAdminRouter(router *gin.Engine, movieRepo *repositories.MovieRepository
 
 	adminRouter := router.Group("/admin")
 	{
+		cinemaGroup := adminRouter.Group("/cinema")
 		movieGroup := adminRouter.Group("/movies")
 		adminController := controllers.NewAdminController(movieRepo)
+		movieGroup.GET("/genres", middle.VerifyToken, middle.AccessGate("admin"), adminController.GetGenre)
 		movieGroup.POST("", middle.VerifyToken, middle.AccessGate("admin"), adminController.AddMovie)
 		movieGroup.PATCH("/:id", middle.VerifyToken, middle.AccessGate("admin"), adminController.UpdateMovie)
 		movieGroup.DELETE("", middle.VerifyToken, middle.AccessGate("admin"), adminController.DeleteMovieById)
-
+		cinemaGroup.GET("", middle.VerifyToken, middle.AccessGate("admin"), adminController.GetCinema)
 	}
 }

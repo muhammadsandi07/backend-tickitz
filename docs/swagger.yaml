@@ -1,0 +1,65 @@
+basePath: /
+definitions:
+  models.AuthStruct:
+    properties:
+      email:
+        type: string
+      id:
+        type: integer
+      password:
+        minLength: 6
+        type: string
+      role:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+      message:
+        type: string
+    type: object
+host: localhose:8080
+info:
+  contact: {}
+  description: example of working Backedn crated during class
+  title: TICKITZ API
+  version: "1.0"
+paths:
+  /auth:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: login information
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AuthStruct'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success response
+          schema:
+            $ref: '#/definitions/models.AuthStruct'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login Users
+swagger: "2.0"

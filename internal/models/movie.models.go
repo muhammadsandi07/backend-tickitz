@@ -50,3 +50,13 @@ type PaginatedMovieResult struct {
 	TotalItems int           `json:"totalItems"`
 	TotalPages int           `json:"totalPages"`
 }
+
+type Genre struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+type Cinema struct {
+	Id       int    `json:"id"`
+	Name     string `json:"name"`
+	Location string `json:"location"`
+}

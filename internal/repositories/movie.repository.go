@@ -248,3 +248,53 @@ func (m *MovieRepository) DeleteMovie(c context.Context, movies *models.MovieStr
 		ResultSecond: cmdMovieGenre,
 	}, nil
 }
+
+func (m *MovieRepository) GetGenres(c context.Context) ([]models.Genre, error) {
+	query := `SELECT id, name FROM genre`
+
+	rows, err := m.db.Query(c, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query genres: %w", err)
+	}
+	defer rows.Close()
+
+	var genres []models.Genre
+	for rows.Next() {
+		var genre models.Genre
+		if err := rows.Scan(&genre.Id, &genre.Name); err != nil {
+			return nil, fmt.Errorf("failed to scan genre: %w", err)
+		}
+		genres = append(genres, genre)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return genres, nil
+}
+
+func (m *MovieRepository) GetCinema(c context.Context) ([]models.Cinema, error) {
+	query := `select cl.id, c.name as name,l.name as location  from cinema c  join cinema_location cl on cl.cinema_id = c.id join location l on l.id  = cl.location_id order by l.name`
+
+	rows, err := m.db.Query(c, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query cinema: %w", err)
+	}
+	defer rows.Close()
+
+	var cinemas []models.Cinema
+	for rows.Next() {
+		var cinema models.Cinema
+		if err := rows.Scan(&cinema.Id, &cinema.Name, &cinema.Location); err != nil {
+			return nil, fmt.Errorf("failed to scan cinema: %w", err)
+		}
+		cinemas = append(cinemas, cinema)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows error: %w", err)
+	}
+
+	return cinemas, nil
+}
