@@ -1,18 +1,27 @@
-# Stage 1: Build aplikasi
-FROM golang:1.21-alpine as builder
+FROM golang:1.24.4-alpine3.22 AS builder
 
 WORKDIR /app
+
+RUN apk add --no-cache git
+
 COPY go.mod go.sum ./
 RUN go mod download
+
 COPY . .
+
+# ENV GO_ENV=production
 
 RUN go build -o server ./cmd/main.go
 
+# STAGE 2
 FROM alpine:3.21.3
-WORKDIR /app
+
+WORKDIR /root/
 
 COPY --from=builder /app/server .
+
 RUN chmod +x server
 
 EXPOSE 8080
-CMD ["./server"]
+
+CMD [ "./server" ]
